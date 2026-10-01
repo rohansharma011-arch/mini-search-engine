@@ -1,0 +1,10 @@
+C++ is a general purpose programming language created by Bjarne Stroustrup.
+C++ supports object oriented programming, generic programming and procedural programming.
+C++ provides classes, objects, inheritance, polymorphism and encapsulation.
+A class is a blueprint for creating objects. Inheritance lets one class reuse another class.
+Templates allow generic programming, so one function can work with many data types.
+The Standard Template Library (STL) provides containers such as vector, list, map, set and unordered_map.
+STL algorithms such as sort, find and binary_search work on these containers.
+C++ gives manual memory management with new and delete, and smart pointers like unique_ptr and shared_ptr.
+A programmer can write fast system software, game engines and compilers in C++.
+Many programs in competitive programming are written in C++ because of the STL.

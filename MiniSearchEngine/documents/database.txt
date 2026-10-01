@@ -1,0 +1,10 @@
+A database is an organized collection of data.
+A database management system (DBMS) stores, retrieves and manages data.
+Relational databases store data in tables made of rows and columns.
+SQL is the query language used for relational databases: SELECT, INSERT, UPDATE and DELETE.
+A primary key uniquely identifies each row. A foreign key links two tables.
+Normalization removes redundancy: first normal form, second normal form and third normal form.
+Indexes make queries faster. Most databases use a B+ tree index for range queries.
+Transactions follow ACID properties: atomicity, consistency, isolation and durability.
+NoSQL databases such as MongoDB store documents instead of tables.
+Joins combine rows from two or more tables based on a related column.

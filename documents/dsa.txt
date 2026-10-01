@@ -1,0 +1,11 @@
+Data structures are used to organize and store data efficiently.
+Arrays, linked lists, stacks and queues are linear data structures.
+Trees are important non-linear data structures.
+A binary tree is a tree where every node has at most two children.
+A binary search tree keeps smaller keys in the left subtree and larger keys in the right subtree.
+Searching a balanced binary search tree takes O(log n) time.
+AVL trees and red black trees are self balancing binary trees.
+A heap is a complete binary tree used to build a priority queue.
+Hash tables store key value pairs and give average O(1) lookup using a hash function.
+Graphs represent networks of nodes connected by edges.
+Choosing the right data structure makes an algorithm faster.

@@ -1,0 +1,10 @@
+An operating system manages computer hardware and provides services to programs.
+A process is a program in execution. Each process has its own memory space.
+Threads are lightweight units of execution inside a process.
+CPU scheduling algorithms include first come first serve, shortest job first, priority scheduling and round robin.
+Deadlock happens when processes wait forever for resources held by each other.
+Semaphores and mutexes are used for process synchronization.
+Memory management uses paging and segmentation. Virtual memory lets programs use more memory than physical RAM.
+The file system organizes files in a directory tree.
+The kernel is the core of the operating system. Linux and Windows are popular operating systems.
+System calls let user programs request services from the kernel.

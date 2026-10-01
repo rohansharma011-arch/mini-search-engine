@@ -1,0 +1,10 @@
+An algorithm is a finite sequence of steps that solves a problem.
+Sorting algorithms include bubble sort, insertion sort, merge sort, quick sort and heap sort.
+Merge sort and heap sort run in O(n log n) time in the worst case.
+Binary search finds an element in a sorted array in O(log n) time.
+Tree traversal algorithms visit every node: inorder, preorder and postorder traversal.
+Breadth first search and depth first search are graph traversal algorithms.
+Dijkstra's algorithm finds the shortest path in a weighted graph.
+Dynamic programming solves problems by storing answers to overlapping subproblems.
+Greedy algorithms make the locally best choice at every step.
+Time complexity measures how the running time of an algorithm grows with input size.

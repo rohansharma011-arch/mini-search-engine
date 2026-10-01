@@ -1,0 +1,10 @@
+Computer networks allow computers to communicate and share resources.
+The OSI model has seven layers: physical, data link, network, transport, session, presentation and application.
+TCP is a reliable, connection oriented networking protocol.
+UDP is a fast, connectionless protocol used for video streaming and online games.
+IP is used for addressing and routing packets between networks.
+An IP address identifies a device on a network. IPv4 addresses are 32 bits long.
+Routers forward packets between networks, while switches connect devices within a network.
+DNS translates domain names into IP addresses.
+HTTP and HTTPS are application layer protocols used by the web.
+Network topologies include star, bus, ring and mesh. A spanning tree protocol prevents loops in switched networks.

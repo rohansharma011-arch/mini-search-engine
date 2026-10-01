@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini Search Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f3ec;
+  --surface: #fffdf8;
+  --surface-2: #efeae0;
+  --ink: #1d1b16;
+  --ink-2: #5d574b;
+  --ink-3: #8f8879;
+  --line: #e2dccf;
+  --accent: #2f4bd8;
+  --accent-soft: #e4e8fb;
+  --mark: #ffe58a;
+  --mark-ink: #1d1b16;
+  --good: #1f7a4d;
+  --bad: #b3261e;
+  --shadow: 0 1px 2px rgba(40,30,10,.06), 0 8px 24px rgba(40,30,10,.06);
+  --radius: 14px;
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14130f;
+    --surface: #1c1b16;
+    --surface-2: #26241d;
+    --ink: #f1ece0;
+    --ink-2: #b9b2a2;
+    --ink-3: #847d6e;
+    --line: #333027;
+    --accent: #8ea2ff;
+    --accent-soft: #252b4d;
+    --mark: #6b5a12;
+    --mark-ink: #fff3c4;
+    --good: #6fd3a0;
+    --bad: #ff8a80;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.55 var(--sans);
+  min-height: 100vh;
+}
+button, input, textarea { font: inherit; color: inherit; }
+mark { background: var(--mark); color: var(--mark-ink); padding: 0 .15em; border-radius: 3px; }
+.mono { font-family: var(--mono); }
+
+/* ---------- top bar / hero ---------- */
+.top {
+  position: sticky; top: 0; z-index: 10;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid transparent;
+  transition: padding .25s ease;
+}
+body.searched .top { border-bottom-color: var(--line); }
+.top-inner {
+  max-width: 1180px; margin: 0 auto; padding: 0 16px;
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 18vh; padding-bottom: 24px; gap: 22px;
+  transition: padding .25s ease;
+}
+body.searched .top-inner {
+  flex-direction: row; padding-top: 14px; padding-bottom: 14px; gap: 20px;
+}
+.logo {
+  font-family: var(--serif); font-weight: 700; letter-spacing: -.02em;
+  font-size: 56px; line-height: 1; cursor: pointer; user-select: none; white-space: nowrap;
+}
+.logo span { color: var(--accent); }
+body.searched .logo { font-size: 26px; }
+.tagline { color: var(--ink-2); margin: -10px 0 0; text-align: center; }
+body.searched .tagline, body.searched .examples, body.searched .home-stats { display: none; }
+
+.search-wrap { position: relative; width: 100%; max-width: 640px; }
+body.searched .search-wrap { max-width: 620px; }
+.search {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 6px 6px 20px; box-shadow: var(--shadow);
+}
+.search:focus-within { border-color: var(--accent); }
+.search svg { flex: none; color: var(--ink-3); }
+.search input {
+  flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
+  font-size: 17px; padding: 8px 0;
+}
+.search button {
+  flex: none; border: 0; background: var(--accent); color: #fff;
+  border-radius: 999px; padding: 9px 20px; font-weight: 600; cursor: pointer;
+}
+@media (prefers-color-scheme: dark) { .search button { color: #0d1030; } }
+
+.suggest {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); list-style: none; margin: 0; padding: 6px; display: none; z-index: 20;
+}
+.suggest.open { display: block; }
+.suggest li {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 8px 14px; border-radius: 10px; cursor: pointer;
+}
+.suggest li.active, .suggest li:hover { background: var(--accent-soft); }
+.suggest .typed { color: var(--ink-3); }
+.suggest .count { color: var(--ink-3); font-family: var(--mono); font-size: 12px; }
+
+.examples { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 640px; }
+.chip {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 5px 13px; cursor: pointer; font-family: var(--mono); font-size: 13px; color: var(--ink-2);
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.home-stats { color: var(--ink-3); font-size: 13px; text-align: center; }
+
+/* ---------- main layout ---------- */
+main { max-width: 1180px; margin: 0 auto; padding: 8px 16px 64px; display: none; }
+body.searched main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; }
+@media (max-width: 900px) { body.searched main { grid-template-columns: 1fr; } }
+
+.meta { color: var(--ink-3); font-size: 13px; margin: 14px 0 6px; }
+.interp { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 18px; font-size: 13px; color: var(--ink-2); }
+.term {
+  font-family: var(--mono); font-size: 12.5px; background: var(--surface-2);
+  border-radius: 6px; padding: 2px 8px;
+}
+.term.phrase { background: var(--accent-soft); color: var(--accent); }
+.op { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: .05em; }
+
+.results { display: flex; flex-direction: column; gap: 14px; }
+.result {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; cursor: pointer; transition: border-color .15s, transform .15s;
+  animation: rise .25s ease both;
+}
+.result:hover { border-color: var(--accent); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.result-head { display: flex; align-items: baseline; gap: 10px; }
+.rank { font-family: var(--mono); color: var(--ink-3); font-size: 13px; }
+.name { font-weight: 600; font-size: 17px; color: var(--accent); word-break: break-all; }
+.score { margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
+.bar { height: 4px; border-radius: 4px; background: var(--surface-2); margin: 10px 0 10px; overflow: hidden; }
+.bar > div { height: 100%; background: var(--accent); border-radius: 4px; transition: width .4s ease; }
+.snippet { color: var(--ink); margin: 0 0 10px; }
+.matched { display: flex; flex-wrap: wrap; gap: 6px; }
+.matched .term b { font-weight: 500; color: var(--ink); }
+.matched .term { color: var(--ink-3); }
+
+.empty {
+  background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius);
+  padding: 28px; text-align: center; color: var(--ink-2);
+}
+.empty .examples { margin-top: 12px; }
+
+/* ---------- sidebar ---------- */
+aside { display: flex; flex-direction: column; gap: 16px; padding-top: 14px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px;
+}
+.card h3 {
+  margin: 0 0 10px; font-family: var(--serif); font-size: 17px; font-weight: 600; letter-spacing: -.01em;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.card p.hint { margin: 0 0 10px; color: var(--ink-3); font-size: 13px; }
+.row { display: flex; gap: 8px; }
+.input {
+  flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 10px;
+  padding: 7px 11px; outline: 0;
+}
+.input:focus { border-color: var(--accent); }
+.btn {
+  border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px;
+  padding: 7px 12px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (prefers-color-scheme: dark) { .btn.primary { color: #0d1030; } }
+.btn.small { padding: 3px 9px; font-size: 12px; }
+
+.postings { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.posting { border-top: 1px solid var(--line); padding-top: 8px; }
+.posting .doc { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
+.posting .doc a { color: var(--accent); cursor: pointer; text-decoration: none; word-break: break-all; }
+.posting .pos { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); margin-top: 2px; word-break: break-word; }
+.kv { display: flex; gap: 14px; font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); }
+
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat b { display: block; font-family: var(--serif); font-size: 22px; font-weight: 600; }
+.stat span { color: var(--ink-3); font-size: 12px; }
+.doclist { list-style: none; margin: 12px 0 0; padding: 0; font-size: 13.5px; }
+.doclist li { display: flex; justify-content: space-between; padding: 5px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.doclist li:hover span:first-child { color: var(--accent); }
+.doclist .n { font-family: var(--mono); color: var(--ink-3); font-size: 12px; }
+
+.syntax { font-size: 13px; margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; }
+.syntax dt { font-family: var(--mono); color: var(--accent); }
+.syntax dd { margin: 0; color: var(--ink-2); }
+
+/* ---------- dialogs ---------- */
+dialog {
+  border: 1px solid var(--line); border-radius: 18px; padding: 0; background: var(--surface); color: var(--ink);
+  width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: var(--shadow);
+}
+dialog::backdrop { background: rgba(20,15,5,.35); backdrop-filter: blur(2px); }
+.dlg-head {
+  display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; background: var(--surface);
+}
+.dlg-head h2 { margin: 0; font-family: var(--serif); font-size: 21px; font-weight: 600; word-break: break-all; }
+.dlg-head .close { margin-left: auto; }
+.dlg-body { padding: 18px 20px 22px; }
+.doc-text { white-space: pre-wrap; font-size: 15px; line-height: 1.75; margin: 0; }
+.doc-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; align-items: center; color: var(--ink-3); font-size: 13px; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; font-size: 13px; color: var(--ink-2); }
+.field textarea { min-height: 220px; resize: vertical; font-family: var(--sans); }
+.msg { font-size: 13px; margin-top: 8px; }
+.msg.err { color: var(--bad); }
+.msg.ok { color: var(--good); }
+
+.offline {
+  max-width: 640px; margin: 18px auto 0; padding: 12px 16px; border-radius: 12px;
+  background: color-mix(in srgb, var(--bad) 12%, var(--surface)); color: var(--bad); font-size: 14px; display: none;
+}
+@media (max-width: 600px) {
+  .logo { font-size: 42px; }
+  body.searched .top-inner { flex-direction: column; gap: 10px; }
+  .search button { padding: 9px 14px; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="logo" id="logo" title="Home">mini<span>/</span>search</div>
+    <p class="tagline">A C++ search engine — inverted index, TF-IDF ranking, phrase &amp; boolean queries.</p>
+
+    <div class="search-wrap">
+      <form class="search" id="searchForm" autocomplete="off">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="text" placeholder="Search your documents…  (press / to focus)" spellcheck="false" aria-label="Search query">
+        <button type="submit">Search</button>
+      </form>
+      <ul class="suggest" id="suggest" role="listbox"></ul>
+    </div>
+
+    <div class="examples" id="examples">
+      <button class="chip" data-q="binary tree">binary tree</button>
+      <button class="chip" data-q='"binary tree"'>"binary tree"</button>
+      <button class="chip" data-q="binary AND sort">binary AND sort</button>
+      <button class="chip" data-q="tcp OR sql">tcp OR sql</button>
+      <button class="chip" data-q="memory management">memory management</button>
+    </div>
+    <div class="home-stats" id="homeStats">&nbsp;</div>
+    <div class="offline" id="offline">Can't reach the C++ server. Start it with <span class="mono">.\bin\web_server.exe</span> and refresh this page.</div>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="meta" id="meta"></div>
+    <div class="interp" id="interp"></div>
+    <div class="results" id="results"></div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h3>Index explorer</h3>
+      <p class="hint">See the inverted-index entry for any word: which documents contain it, how often, and where.</p>
+      <form class="row" id="idxForm">
+        <input class="input mono" id="idxTerm" placeholder="e.g. tree" spellcheck="false">
+        <button class="btn" type="submit">Look up</button>
+      </form>
+      <div id="idxOut"></div>
+    </div>
+
+    <div class="card">
+      <h3>Collection
+        <span class="row">
+          <button class="btn small" id="reloadBtn" title="Re-read the documents folder">Reload</button>
+          <button class="btn small primary" id="addBtn">+ Add</button>
+        </span>
+      </h3>
+      <div class="stats" id="stats"></div>
+      <ul class="doclist" id="doclist"></ul>
+    </div>
+
+    <div class="card">
+      <h3>Query syntax</h3>
+      <dl class="syntax">
+        <dt>binary tree</dt><dd>any word, ranked by TF-IDF</dd>
+        <dt>a AND b</dt><dd>both words must appear</dd>
+        <dt>a OR b</dt><dd>either word</dd>
+        <dt>"a b"</dt><dd>exact phrase, words next to each other</dd>
+        <dt>a AND b OR c</dt><dd>(a AND b) OR c</dd>
+      </dl>
+    </div>
+  </aside>
+</main>
+
+<dialog id="docDlg">
+  <div class="dlg-head">
+    <h2 id="docTitle"></h2>
+    <button class="btn close" data-close>Close</button>
+  </div>
+  <div class="dlg-body">
+    <div class="doc-meta" id="docMeta"></div>
+    <p class="doc-text" id="docText"></p>
+  </div>
+</dialog>
+
+<dialog id="addDlg">
+  <form id="addForm">
+    <div class="dlg-head">
+      <h2>Add a document</h2>
+      <button class="btn close" type="button" data-close>Cancel</button>
+    </div>
+    <div class="dlg-body">
+      <label class="field">File name (saved as <span class="mono">name.txt</span> in the documents folder)
+        <input class="input mono" id="addName" placeholder="computer_graphics" required pattern="[A-Za-z0-9_\-]+">
+      </label>
+      <label class="field">Text
+        <textarea class="input" id="addText" placeholder="Paste or type the document text…" required></textarea>
+      </label>
+      <div class="row" style="justify-content:flex-end">
+        <button class="btn primary" type="submit">Save &amp; re-index</button>
+      </div>
+      <div class="msg" id="addMsg"></div>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function api(path, options) {
+  let res;
+  try { res = await fetch(path, options); }
+  catch (e) { $("#offline").style.display = "block"; throw e; }
+  $("#offline").style.display = "none";
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+
+const q = $("#q");
+let lastResults = [];
+
+/* ---------------- search ---------------- */
+async function runSearch(query, push = true) {
+  query = query.trim();
+  if (!query) return;
+  q.value = query;
+  closeSuggest();
+  document.body.classList.add("searched");
+  if (push) history.pushState({ q: query }, "", "#q=" + encodeURIComponent(query));
+
+  const data = await api("/api/search?q=" + encodeURIComponent(query));
+  lastResults = data.results;
+  renderInterpretation(data.interpretation);
+
+  const n = data.results.length;
+  $("#meta").textContent = n
+    ? `${n} result${n > 1 ? "s" : ""} · ${data.timeMs.toFixed(3)} ms`
+    : `No results · ${data.timeMs.toFixed(3)} ms`;
+
+  const box = $("#results");
+  if (!n) {
+    const dym = data.didYouMean.length
+      ? `<p>Did you mean:</p><div class="examples">${data.didYouMean.map(w => `<button class="chip" data-fix="${esc(w)}">${esc(w)}</button>`).join("")}</div>`
+      : `<p>Try different words, or use <span class="mono">OR</span> instead of <span class="mono">AND</span>.</p>`;
+    box.innerHTML = `<div class="empty"><p><b>No documents match “${esc(query)}”.</b></p>${dym}</div>`;
+    box.querySelectorAll("[data-fix]").forEach(b => b.onclick = () => runSearch(replaceLastWord(query, b.dataset.fix)));
+    return;
+  }
+
+  const top = data.results[0].score || 1;
+  box.innerHTML = data.results.map((r, i) => `
+    <article class="result" data-i="${i}" style="animation-delay:${i * 30}ms">
+      <div class="result-head">
+        <span class="rank">${i + 1}</span>
+        <span class="name">${esc(r.name)}</span>
+        <span class="score" title="Cosine similarity between the query and document TF-IDF vectors">score ${r.score.toFixed(3)}</span>
+      </div>
+      <div class="bar"><div style="width:${Math.max(3, r.score / top * 100)}%"></div></div>
+      <p class="snippet">${r.snippet}</p>
+      <div class="matched">${r.matched.map(m =>
+        `<span class="term" title="term frequency in this document × inverse document frequency"><b>${esc(m.term)}</b> · tf ${m.tf} · idf ${m.idf.toFixed(2)}</span>`).join("")}
+        <span class="term" title="number of indexed terms in this document">${r.length} terms</span>
+      </div>
+    </article>`).join("");
+  box.querySelectorAll(".result").forEach(el => el.onclick = () => {
+    const r = lastResults[+el.dataset.i];
+    openDoc(r.id, r.matched.map(m => m.term));
+  });
+}
+
+function renderInterpretation(it) {
+  const item = t => t.phrase ? `<span class="term phrase">"${esc(t.text)}"</span>` : `<span class="term">${esc(t.text)}</span>`;
+  let html = "";
+  if (!it.groups.length) html = "Only stop words — nothing to search for.";
+  else if (it.mode === "ranked") {
+    const words = it.groups[0].filter(t => !t.phrase), phrases = it.groups[0].filter(t => t.phrase);
+    html = "Interpreted as";
+    if (phrases.length) html += ` phrase ${phrases.map(item).join(" ")} (required)` + (words.length ? " plus" : "");
+    if (words.length) html += ` any of ${words.map(item).join(" ")}`;
+    html += " · ranked by TF-IDF";
+  } else {
+    html = "Interpreted as " + it.groups.map(g =>
+      (it.groups.length > 1 && g.length > 1 ? "( " : "") + g.map(item).join(' <span class="op">AND</span> ') + (it.groups.length > 1 && g.length > 1 ? " )" : "")
+    ).join(' <span class="op">OR</span> ');
+  }
+  $("#interp").innerHTML = html;
+}
+
+/* ---------------- autocomplete ---------------- */
+const sug = $("#suggest");
+let sugItems = [], sugActive = -1, sugTimer = null, sugSeq = 0;
+
+function lastWord(s) {
+  const m = s.match(/([^\s"]*)$/);
+  return m ? m[1] : "";
+}
+function replaceLastWord(s, word) {
+  return s.replace(/([^\s"]*)$/, word);
+}
+function closeSuggest() { sug.classList.remove("open"); sugItems = []; sugActive = -1; }
+
+q.addEventListener("input", () => {
+  clearTimeout(sugTimer);
+  const w = lastWord(q.value);
+  if (!w || w === "AND" || w === "OR") { closeSuggest(); return; }
+  sugTimer = setTimeout(async () => {
+    const seq = ++sugSeq;
+    const list = await api("/api/suggest?q=" + encodeURIComponent(w));
+    if (seq !== sugSeq) return;                       // a newer request is in flight
+    sugItems = list.filter(s => s.word !== w.toLowerCase());
+    sugActive = -1;
+    if (!sugItems.length) { closeSuggest(); return; }
+    sug.innerHTML = sugItems.map((s, i) =>
+      `<li data-i="${i}"><span><span class="typed">${esc(s.word.slice(0, w.length))}</span><b>${esc(s.word.slice(w.length))}</b></span><span class="count">${s.count}×</span></li>`).join("");
+    sug.classList.add("open");
+    sug.querySelectorAll("li").forEach(li => li.onmousedown = e => { e.preventDefault(); pickSuggestion(+li.dataset.i); });
+  }, 90);
+});
+
+function pickSuggestion(i) {
+  q.value = replaceLastWord(q.value, sugItems[i].word) + " ";
+  closeSuggest();
+  q.focus();
+}
+function highlightSuggestion() {
+  sug.querySelectorAll("li").forEach((li, i) => li.classList.toggle("active", i === sugActive));
+}
+q.addEventListener("keydown", e => {
+  if (!sug.classList.contains("open")) return;
+  if (e.key === "ArrowDown") { e.preventDefault(); sugActive = (sugActive + 1) % sugItems.length; highlightSuggestion(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); sugActive = (sugActive - 1 + sugItems.length) % sugItems.length; highlightSuggestion(); }
+  else if (e.key === "Tab" || (e.key === "Enter" && sugActive >= 0)) { e.preventDefault(); pickSuggestion(Math.max(0, sugActive)); }
+  else if (e.key === "Escape") closeSuggest();
+});
+q.addEventListener("blur", () => setTimeout(closeSuggest, 100));
+
+$("#searchForm").addEventListener("submit", e => { e.preventDefault(); runSearch(q.value); });
+document.querySelectorAll("#examples .chip").forEach(b => b.onclick = () => runSearch(b.dataset.q));
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+    e.preventDefault(); q.focus();
+  }
+});
+$("#logo").onclick = () => {
+  document.body.classList.remove("searched");
+  q.value = "";
+  history.pushState({}, "", location.pathname);
+  q.focus();
+};
+
+/* ---------------- document viewer ---------------- */
+async function openDoc(id, terms = []) {
+  const d = await api(`/api/doc?id=${id}&terms=${encodeURIComponent(terms.join(","))}`);
+  $("#docTitle").textContent = d.name;
+  $("#docMeta").innerHTML = `${d.terms} terms · ${d.unique} unique` +
+    (terms.length ? ` · highlighting ${terms.map(t => `<span class="term">${esc(t)}</span>`).join(" ")}` : "");
+  $("#docText").innerHTML = d.html;
+  $("#docDlg").showModal();
+  $("#docDlg").scrollTop = 0;
+  const first = $("#docText mark");
+  if (first) first.scrollIntoView({ block: "center" });
+}
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());
+document.querySelectorAll("dialog").forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
+
+/* ---------------- index explorer ---------------- */
+$("#idxForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const word = $("#idxTerm").value.trim();
+  if (!word) return;
+  const d = await api("/api/index?term=" + encodeURIComponent(word));
+  const out = $("#idxOut");
+  if (d.stopWord) { out.innerHTML = `<p class="hint" style="margin-top:10px">“${esc(word)}” is a stop word, so it isn't indexed.</p>`; return; }
+  if (!d.postings.length) { out.innerHTML = `<p class="hint" style="margin-top:10px">Term <span class="term">${esc(d.term)}</span> is not in any document.</p>`; return; }
+  out.innerHTML = `
+    <div class="postings">
+      <div class="kv"><span>term <b>${esc(d.term)}</b></span><span>df ${d.df}</span><span>idf ${d.idf.toFixed(3)}</span></div>
+      ${d.postings.map(p => `
+        <div class="posting">
+          <div class="doc"><a data-id="${p.id}">${esc(p.name)}</a><span class="mono">tf ${p.tf}</span></div>
+          <div class="pos">positions: ${p.positions.join(", ")}</div>
+        </div>`).join("")}
+    </div>`;
+  out.querySelectorAll("a[data-id]").forEach(a => a.onclick = () => openDoc(+a.dataset.id, [d.term]));
+});
+
+/* ---------------- collection ---------------- */
+function renderStats(s) {
+  $("#homeStats").textContent = `${s.documents} documents · ${s.vocabulary} unique terms · indexed in ${s.indexMs} ms`;
+  $("#stats").innerHTML = `
+    <div class="stat"><b>${s.documents}</b><span>documents</span></div>
+    <div class="stat"><b>${s.vocabulary}</b><span>unique terms</span></div>
+    <div class="stat"><b>${s.totalTerms}</b><span>total terms</span></div>
+    <div class="stat"><b>${s.indexMs}<small style="font-size:13px"> ms</small></b><span>index build</span></div>`;
+  $("#doclist").innerHTML = s.docs.map(d =>
+    `<li data-id="${d.id}"><span>${esc(d.name)}</span><span class="n">${d.terms}</span></li>`).join("");
+  $("#doclist").querySelectorAll("li").forEach(li => li.onclick = () => openDoc(+li.dataset.id));
+}
+async function loadStats() { renderStats(await api("/api/stats")); }
+
+$("#reloadBtn").onclick = async () => {
+  renderStats(await api("/api/reload", { method: "POST" }));
+  if (q.value.trim() && document.body.classList.contains("searched")) runSearch(q.value, false);
+};
+$("#addBtn").onclick = () => { $("#addMsg").textContent = ""; $("#addDlg").showModal(); $("#addName").focus(); };
+$("#addForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("#addMsg");
+  try {
+    const s = await api("/api/add?name=" + encodeURIComponent($("#addName").value.trim()), {
+      method: "POST", body: $("#addText").value, headers: { "Content-Type": "text/plain; charset=utf-8" }
+    });
+    renderStats(s);
+    msg.className = "msg ok"; msg.textContent = "Saved and re-indexed.";
+    $("#addName").value = ""; $("#addText").value = "";
+    setTimeout(() => $("#addDlg").close(), 700);
+    if (q.value.trim() && document.body.classList.contains("searched")) runSearch(q.value, false);
+  } catch (err) { msg.className = "msg err"; msg.textContent = err.message; }
+});
+
+/* ---------------- start ---------------- */
+function fromHash() {
+  const m = location.hash.match(/^#q=(.*)$/);
+  if (m) runSearch(decodeURIComponent(m[1]), false);
+  else { document.body.classList.remove("searched"); q.value = ""; }
+}
+window.addEventListener("popstate", fromHash);
+loadStats().catch(() => {});
+fromHash();
+q.focus();
+</script>
+</body>
+</html>
